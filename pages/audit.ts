@@ -18,7 +18,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const html = await page.content();
     const $ = cheerio.load(html);
 
-    // Extrae algunos elementos clave
     const title = $("title").text();
     const h1 = $("h1").first().text();
     const metaDesc = $('meta[name="description"]').attr("content") || "";
