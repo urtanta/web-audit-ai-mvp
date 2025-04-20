@@ -9,7 +9,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (req.method !== "POST") return res.status(405).end();
 
   const { url } = req.body;
-  if (!url || !url.startsWith("http")) {
+
+  // Verifica que URL exista y sea tipo string
+  if (typeof url !== "string" || !url.startsWith("http")) {
     return res.status(400).json({ error: "URL inválida" });
   }
 
@@ -68,7 +70,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       },
     });
   } catch (err) {
-    console.error(err);
+    console.error("Audit error:", err);
     res.status(500).json({ error: "Error durante la auditoría" });
   }
 }
