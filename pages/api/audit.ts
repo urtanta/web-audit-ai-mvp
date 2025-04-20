@@ -1,8 +1,7 @@
 import { NextApiRequest, NextApiResponse } from "next";
-
-// Importación CommonJS
 import { analyzeRobots } from "../../backend/utils/robots";
 import { parseHTML } from "../../backend/utils/cheerio";
+import { logToFile } from "../../backend/utils/logger";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "POST") return res.status(405).end();
@@ -10,49 +9,44 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const { url } = req.body;
 
   if (typeof url !== "string" || !url.startsWith("http")) {
-    console.warn("🔴 URL inválida:", url);
+    logToFile(`🔴 URL inválida recibida: ${url}`);
     return res.status(400).json({ error: "URL inválida" });
   }
 
-  console.log("📥 Iniciando auditoría para:", url);
+  logToFile(`📥 Inicio de auditoría para: ${url}`);
 
   try {
     let htmlInfo, robotsTxt, lighthouse;
 
-    // 1. Analizar HTML
     try {
       htmlInfo = await parseHTML(url);
-      console.log("✅ HTML analizado con éxito");
+      logToFile("✅ HTML analizado con éxito");
     } catch (err) {
-      console.error("❌ Error en parseHTML:", err);
+      logToFile(`❌ Error en parseHTML: ${err}`);
       throw new Error("Error al analizar el HTML");
     }
 
-    // 2. Analizar robots.txt
     try {
       robotsTxt = await analyzeRobots(url);
-      console.log("✅ Robots.txt analizado");
+      logToFile("✅ robots.txt obtenido");
     } catch (err) {
-      console.error("❌ Error al obtener robots.txt:", err);
+      logToFile(`⚠️ robots.txt falló: ${err}`);
       robotsTxt = "No se pudo obtener el archivo robots.txt";
     }
 
-    // 3. Lighthouse (ESM import dinámico)
     try {
       const { launchLighthouse } = await import("../../backend/utils/lighthouse.mjs");
-
-      if (!launchLighthouse) {
-        throw new Error("Función launchLighthouse no encontrada");
-      }
+      if (!launchLighthouse) throw new Error("launchLighthouse no definido");
 
       lighthouse = await launchLighthouse(url);
-      console.log("✅ Lighthouse ejecutado");
+      logToFile("✅ Lighthouse ejecutado con éxito");
     } catch (err) {
-      console.error("❌ Error al ejecutar Lighthouse:", err);
-      throw new Error("Error al lanzar Lighthouse");
+      logToFile(`❌ Error al ejecutar Lighthouse: ${err}`);
+      throw new Error("Error al ejecutar Lighthouse");
     }
 
-    // 4. Enviar respuesta
+    logToFile("📤 Auditoría finalizada correctamente");
+
     res.status(200).json({
       result: {
         ...htmlInfo,
@@ -61,7 +55,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       lighthouse,
     });
   } catch (err: any) {
-    console.error("🚨 Audit error general:", err.message);
+    logToFile(`🚨 Error general: ${err.message}`);
     res.status(500).json({ error: err.message || "Error durante la auditoría" });
   }
 }
