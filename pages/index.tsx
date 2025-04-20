@@ -7,7 +7,7 @@ return (
         className="p-2 border w-full sm:w-96 rounded"
         value={url}
         onChange={(e) => setUrl(e.target.value)}
-        placeholder="https://ejemplo.com"
+        placeholder="https://adibidea.com"
       />
       <button
         onClick={handleAudit}
