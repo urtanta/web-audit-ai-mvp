@@ -19,7 +19,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen p-8 bg-gray-100 text-gray-800">
-      <h1 className="text-3xl font-bold mb-6">Auditoría Web AI</h1>
+      <h1 className="text-3xl font-bold mb-6">Escribe la URL que vamos a auditar</h1>
       <input
         className="p-2 border w-full max-w-md"
         value={url}
