@@ -3,6 +3,7 @@ import lighthouse from "lighthouse";
 import puppeteer from "puppeteer";
 import cheerio from "cheerio";
 import { parse } from "url";
+import type { RunnerResult } from 'lighthouse';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "POST") return res.status(405).end();
@@ -38,11 +39,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       robotsTxt,
     };
 
-    const { lhr } = await lighthouse(url, {
-      port: new URL(browser.wsEndpoint!).port,
-      output: "json",
-      logLevel: "error",
-    });
+    const result: RunnerResult | undefined = await lighthouse(url, {
+  port: new URL(browser.wsEndpoint!).port,
+  output: "json",
+  logLevel: "error",
+});
+
+if (!result || !result.lhr) {
+  throw new Error("Lighthouse failed to return a result");
+}
+
+const { lhr } = result;
 
     await browser.close();
 
