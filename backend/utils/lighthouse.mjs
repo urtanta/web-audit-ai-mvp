@@ -1,7 +1,7 @@
-onst lighthouse = require("lighthouse");
-const puppeteer = require("puppeteer");
+import lighthouse from "lighthouse";
+import puppeteer from "puppeteer";
 
-async function launchLighthouse(url) {
+export async function launchLighthouse(url) {
   const browser = await puppeteer.launch({
     headless: true,
     args: ["--no-sandbox"],
@@ -26,5 +26,3 @@ async function launchLighthouse(url) {
     accessibility: lhr.categories.accessibility.score,
   };
 }
-
-module.exports = { launchLighthouse };
