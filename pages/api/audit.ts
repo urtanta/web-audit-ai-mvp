@@ -1,4 +1,4 @@
-import { NextApiRequest, NextApiResponse } from "next";
+[import { NextApiRequest, NextApiResponse } from "next";
 import lighthouse from "lighthouse";
 import puppeteer from "puppeteer";
 import cheerio from "cheerio";
@@ -10,7 +10,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   const { url } = req.body;
 
-  // Verifica que URL exista y sea tipo string
   if (typeof url !== "string" || !url.startsWith("http")) {
     return res.status(400).json({ error: "URL inválida" });
   }
@@ -41,7 +40,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // Lighthouse
     const lhResult: RunnerResult | undefined = await lighthouse(url, {
-      port: Number(new URL(browser.wsEndpoint!).port),
+      port: Number(new URL(browser.wsEndpoint()).port), // ← CORREGIDO AQUÍ
       output: "json",
       logLevel: "error",
     });
@@ -54,7 +53,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     await browser.close();
 
-    // Construir respuesta
     res.status(200).json({
       result: {
         title,
@@ -74,4 +72,3 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     res.status(500).json({ error: "Error durante la auditoría" });
   }
 }
-
