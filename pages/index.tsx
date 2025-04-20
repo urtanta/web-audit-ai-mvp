@@ -22,6 +22,7 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<AuditResult | null>(null);
   const [error, setError] = useState("");
+  const [progressMessage, setProgressMessage] = useState("");
 
   const handleAudit = async () => {
     if (!url || !url.startsWith("http")) {
@@ -30,8 +31,9 @@ export default function Home() {
     }
 
     setError("");
-    setLoading(true);
     setResult(null);
+    setLoading(true);
+    setProgressMessage("🔍 Iniciando análisis...");
 
     try {
       const res = await fetch("/api/audit", {
@@ -47,12 +49,19 @@ export default function Home() {
       }
 
       setResult(data);
+      setProgressMessage("✅ Auditoría completada con éxito");
     } catch (err: any) {
-      console.error(err);
       setError(err.message);
+      setProgressMessage("");
     } finally {
       setLoading(false);
     }
+  };
+
+  const getColor = (score: number) => {
+    if (score >= 0.9) return "bg-green-500";
+    if (score >= 0.5) return "bg-yellow-500";
+    return "bg-red-500";
   };
 
   return (
@@ -74,12 +83,12 @@ export default function Home() {
         </button>
       </div>
 
-      {loading && <p className="text-blue-600 font-medium">🔍 Analizando...</p>}
+      {progressMessage && <p className="text-blue-600 font-medium">{progressMessage}</p>}
       {error && <p className="text-red-500 font-medium">{error}</p>}
 
       {result && (
         <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Bloque 1: Info básica del HTML */}
+          {/* Info HTML */}
           <div className="bg-white p-4 rounded shadow">
             <h2 className="text-xl font-semibold mb-4">🧠 Metadata HTML</h2>
             <p><strong>Título:</strong> {result.result.title}</p>
@@ -92,16 +101,24 @@ export default function Home() {
             </pre>
           </div>
 
-          {/* Bloque 2: Resultados Lighthouse */}
+          {/* Lighthouse scores con barras de progreso */}
           <div className="bg-white p-4 rounded shadow">
             <h2 className="text-xl font-semibold mb-4">🚦 Puntuaciones Lighthouse</h2>
-            <ul className="space-y-2">
+            <ul className="space-y-4">
               {Object.entries(result.lighthouse).map(([key, value]) => {
                 const score = value as number;
                 return (
-                  <li key={key} className="flex justify-between">
-                    <span className="capitalize">{key}</span>
-                    <span className="font-bold">{(score * 100).toFixed(0)} / 100</span>
+                  <li key={key}>
+                    <div className="flex justify-between mb-1">
+                      <span className="capitalize font-medium">{key}</span>
+                      <span>{(score * 100).toFixed(0)}%</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded h-4">
+                      <div
+                        className={`${getColor(score)} h-4 rounded`}
+                        style={{ width: `${score * 100}%` }}
+                      ></div>
+                    </div>
                   </li>
                 );
               })}
