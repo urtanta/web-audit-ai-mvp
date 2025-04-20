@@ -1,9 +1,8 @@
 import { NextApiRequest, NextApiResponse } from "next";
-import lighthouse from "lighthouse";
-import puppeteer from "puppeteer";
-import cheerio from "cheerio";
-import { parse } from "url";
-import type { RunnerResult } from "lighthouse";
+
+// Importación CommonJS
+import { analyzeRobots } from "../../backend/utils/robots";
+import { parseHTML } from "../../backend/utils/cheerio";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "POST") return res.status(405).end();
@@ -15,57 +14,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    const browser = await puppeteer.launch({
-      headless: true,
-      args: ["--no-sandbox"],
-    });
+    // Analizar HTML con puppeteer + cheerio
+    const htmlInfo = await parseHTML(url);
 
-    const page = await browser.newPage();
-    await page.goto(url, { waitUntil: "networkidle2" });
+    // Obtener robots.txt
+    const robotsTxt = await analyzeRobots(url);
 
-    const html = await page.content();
-    const $ = cheerio.load(html);
-
-    // HTML info
-    const title = $("title").text();
-    const h1 = $("h1").first().text();
-    const metaDesc = $('meta[name="description"]').attr("content") || "";
-    const robotsMeta = $('meta[name="robots"]').attr("content") || "no meta";
-
-    // robots.txt
-    const parsedUrl = parse(url);
-    const robotsTxtUrl = `${parsedUrl.protocol}//${parsedUrl.host}/robots.txt`;
-    const robotsTxtRes = await fetch(robotsTxtUrl);
-    const robotsTxt = robotsTxtRes.ok ? await robotsTxtRes.text() : "No encontrado";
-
-    // Lighthouse
-    const lhResult: RunnerResult | undefined = await lighthouse(url, {
-      port: Number(new URL(browser.wsEndpoint()).port), // ← CORREGIDO AQUÍ
-      output: "json",
-      logLevel: "error",
-    });
-
-    if (!lhResult || !lhResult.lhr) {
-      throw new Error("Lighthouse no devolvió resultados");
-    }
-
-    const { lhr } = lhResult;
-
-    await browser.close();
+    // Importación dinámica para módulo ESM (lighthouse.mjs)
+    const { launchLighthouse } = await import("../../backend/utils/lighthouse.mjs");
+    const lighthouse = await launchLighthouse(url);
 
     res.status(200).json({
       result: {
-        title,
-        h1,
-        metaDesc,
-        robotsMeta,
+        ...htmlInfo,
         robotsTxt,
       },
-      lighthouse: {
-        performance: lhr.categories.performance.score,
-        seo: lhr.categories.seo.score,
-        accessibility: lhr.categories.accessibility.score,
-      },
+      lighthouse,
     });
   } catch (err) {
     console.error("Audit error:", err);
