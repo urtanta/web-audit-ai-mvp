@@ -39,7 +39,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // Lighthouse
     const lhResult: RunnerResult | undefined = await lighthouse(url, {
-      port: new URL(browser.wsEndpoint!).port,
+      port: Number(new URL(browser.wsEndpoint!).port),
       output: "json",
       logLevel: "error",
     });
