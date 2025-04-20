@@ -3,58 +3,64 @@ import lighthouse from "lighthouse";
 import puppeteer from "puppeteer";
 import cheerio from "cheerio";
 import { parse } from "url";
-import type { RunnerResult } from 'lighthouse';
+import type { RunnerResult } from "lighthouse";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "POST") return res.status(405).end();
 
   const { url } = req.body;
-  if (!url || !url.startsWith("http")) return res.status(400).json({ error: "URL inválida" });
+  if (!url || !url.startsWith("http")) {
+    return res.status(400).json({ error: "URL inválida" });
+  }
 
   try {
-    const browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox'] });
+    const browser = await puppeteer.launch({
+      headless: true,
+      args: ["--no-sandbox"],
+    });
+
     const page = await browser.newPage();
     await page.goto(url, { waitUntil: "networkidle2" });
 
     const html = await page.content();
     const $ = cheerio.load(html);
 
-    // Extrae algunos elementos clave
+    // HTML info
     const title = $("title").text();
     const h1 = $("h1").first().text();
     const metaDesc = $('meta[name="description"]').attr("content") || "";
     const robotsMeta = $('meta[name="robots"]').attr("content") || "no meta";
 
+    // robots.txt
     const parsedUrl = parse(url);
     const robotsTxtUrl = `${parsedUrl.protocol}//${parsedUrl.host}/robots.txt`;
-
     const robotsTxtRes = await fetch(robotsTxtUrl);
     const robotsTxt = robotsTxtRes.ok ? await robotsTxtRes.text() : "No encontrado";
 
-    const result = {
-      title,
-      h1,
-      metaDesc,
-      robotsMeta,
-      robotsTxt,
-    };
+    // Lighthouse
+    const lhResult: RunnerResult | undefined = await lighthouse(url, {
+      port: new URL(browser.wsEndpoint!).port,
+      output: "json",
+      logLevel: "error",
+    });
 
-    const result: RunnerResult | undefined = await lighthouse(url, {
-  port: new URL(browser.wsEndpoint!).port,
-  output: "json",
-  logLevel: "error",
-});
+    if (!lhResult || !lhResult.lhr) {
+      throw new Error("Lighthouse no devolvió resultados");
+    }
 
-if (!result || !result.lhr) {
-  throw new Error("Lighthouse failed to return a result");
-}
-
-const { lhr } = result;
+    const { lhr } = lhResult;
 
     await browser.close();
 
+    // Construir respuesta
     res.status(200).json({
-      result,
+      result: {
+        title,
+        h1,
+        metaDesc,
+        robotsMeta,
+        robotsTxt,
+      },
       lighthouse: {
         performance: lhr.categories.performance.score,
         seo: lhr.categories.seo.score,
@@ -66,3 +72,4 @@ const { lhr } = result;
     res.status(500).json({ error: "Error durante la auditoría" });
   }
 }
+
