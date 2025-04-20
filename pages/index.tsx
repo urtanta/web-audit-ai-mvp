@@ -1,9 +1,26 @@
 import { useState } from "react";
 
+interface LighthouseScores {
+  performance: number;
+  seo: number;
+  accessibility: number;
+}
+
+interface AuditResult {
+  result: {
+    title: string;
+    h1: string;
+    metaDesc: string;
+    robotsMeta: string;
+    robotsTxt: string;
+  };
+  lighthouse: LighthouseScores;
+}
+
 export default function Home() {
   const [url, setUrl] = useState("");
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<AuditResult | null>(null);
   const [error, setError] = useState("");
 
   const handleAudit = async () => {
@@ -70,19 +87,24 @@ export default function Home() {
             <p><strong>Meta descripción:</strong> {result.result.metaDesc}</p>
             <p><strong>Meta robots:</strong> {result.result.robotsMeta}</p>
             <p><strong>robots.txt:</strong></p>
-            <pre className="text-sm bg-gray-100 p-2 mt-2 rounded overflow-auto max-h-48">{result.result.robotsTxt}</pre>
+            <pre className="text-sm bg-gray-100 p-2 mt-2 rounded overflow-auto max-h-48">
+              {result.result.robotsTxt}
+            </pre>
           </div>
 
           {/* Bloque 2: Resultados Lighthouse */}
           <div className="bg-white p-4 rounded shadow">
             <h2 className="text-xl font-semibold mb-4">🚦 Puntuaciones Lighthouse</h2>
             <ul className="space-y-2">
-              {Object.entries(result.lighthouse).map(([key, score]) => (
-                <li key={key} className="flex justify-between">
-                  <span className="capitalize">{key}</span>
-                  <span className="font-bold">{(score * 100).toFixed(0)} / 100</span>
-                </li>
-              ))}
+              {Object.entries(result.lighthouse).map(([key, value]) => {
+                const score = value as number;
+                return (
+                  <li key={key} className="flex justify-between">
+                    <span className="capitalize">{key}</span>
+                    <span className="font-bold">{(score * 100).toFixed(0)} / 100</span>
+                  </li>
+                );
+              })}
             </ul>
           </div>
         </div>
