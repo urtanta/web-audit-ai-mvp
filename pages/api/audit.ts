@@ -1,4 +1,4 @@
-[import { NextApiRequest, NextApiResponse } from "next";
+import { NextApiRequest, NextApiResponse } from "next";
 import lighthouse from "lighthouse";
 import puppeteer from "puppeteer";
 import cheerio from "cheerio";
