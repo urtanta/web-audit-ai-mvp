@@ -1,6 +1,6 @@
 return (
   <div className={`h-screen px-4 bg-gray-100 text-gray-800 flex flex-col ${!result ? "justify-center items-center" : "py-8"}`}>
-    <h1 className="text-3xl font-bold mb-6 text-center">Auditoría Web Automática</h1>
+    <h1 className="text-3xl font-bold mb-6 text-center">Auditoría Web</h1>
 
     <div className="flex flex-col sm:flex-row gap-4 w-full max-w-xl justify-center">
       <input
